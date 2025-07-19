@@ -1,4 +1,3 @@
-#from __future__ import annotations
 from datetime import date
 from fastapi import FastAPI, Depends, HTTPException, status, Query
 from sqlmodel import Session, select
@@ -77,76 +76,6 @@ def calculate_age(birth_date: date) -> int:
     return today.year - birth_date.year - (
         (today.month, today.day) < (birth_date.month, birth_date.day))
 
-# @app.post("/Users/")
-# def create_user(user: schemas.Create_User, session: session_dep):
-#     try:
-#         # 1. Verificar si usuario ya existe
-#         existing_user = session.exec(
-#             select(models.Users).where(
-#                 (models.Users.email == user.email) |
-#                 (models.Users.name_user == user.name_user)
-#             )
-#         ).first()
-        
-#         if existing_user:
-#             raise HTTPException(status_code=400, detail="Usuario ya existe")
-        
-#         existing_club = session.exec(
-#             select(models.Clubs).where(
-#                 (models.Clubs.id == user.club_id)
-#             )
-#         ).first()
-        
-#         if existing_club == None:
-#             raise HTTPException(status_code=400, detail="club no existe")
-
-#         # 2. Hashear la contraseña ANTES de crear el modelo Users
-#         hashed_password = models.pwd_context.hash(user.password)
-
-#         # 3. Crear el diccionario de datos excluyendo el password plano
-#         user_data = user.dict(exclude={"password"})
-#         user_data["hashed_password"] = hashed_password
-
-#         # 4. Calcular edad si hay fecha de nacimiento
-#         if user.birth_date:
-#             today = date.today()
-#             user_data["age"] = today.year - user.birth_date.year - (
-#                 (today.month, today.day) < (user.birth_date.month, user.birth_date.day))
-
-#         # 5. Crear instancia del modelo Users con TODOS los campos requeridos
-#         db_user = models.Users(**user_data)
-#         session.add(db_user)
-#         session.commit()
-#         session.refresh(db_user)
-#         return db_user
-
-#     except Exception as e:
-#         session.rollback()
-#         raise HTTPException(status_code=500, detail=str(e))
-    
-
-# @app.post("/Users/", response_model=schemas.UsersPublic)
-# def create_user(user: schemas.Create_User, session: session_dep):
-#     # Verificación de usuario existente
-#     existing_user = session.exec(
-#         select(models.Users).where(
-#             (models.Users.email == user.email) |
-#             (models.Users.name_user == user.name_user)
-#         )
-#     ).first()
-    
-#     if existing_user:
-#         raise HTTPException(status_code=400, detail="Usuario ya existe")
-
-#     # Crear usuario sin manejar relaciones directamente
-#     user_data = user.dict(exclude={"password"})
-#     user_data["hashed_password"] = models.pwd_context.hash(user.password)
-    
-#     db_user = models.Users(**user_data)
-#     session.add(db_user)
-#     session.commit()
-#     session.refresh(db_user)
-#     return db_user
 
 @app.post("/Clubs/", response_model=schemas.ClubsPublic, status_code=status.HTTP_201_CREATED)
 def create_club(club: schemas.Create_Club, session: session_dep):
@@ -333,3 +262,77 @@ def update_user(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error al actualizar usuario: {str(e)}"
         )
+    
+
+
+
+# @app.post("/Users/")
+# def create_user(user: schemas.Create_User, session: session_dep):
+#     try:
+#         # 1. Verificar si usuario ya existe
+#         existing_user = session.exec(
+#             select(models.Users).where(
+#                 (models.Users.email == user.email) |
+#                 (models.Users.name_user == user.name_user)
+#             )
+#         ).first()
+        
+#         if existing_user:
+#             raise HTTPException(status_code=400, detail="Usuario ya existe")
+        
+#         existing_club = session.exec(
+#             select(models.Clubs).where(
+#                 (models.Clubs.id == user.club_id)
+#             )
+#         ).first()
+        
+#         if existing_club == None:
+#             raise HTTPException(status_code=400, detail="club no existe")
+
+#         # 2. Hashear la contraseña ANTES de crear el modelo Users
+#         hashed_password = models.pwd_context.hash(user.password)
+
+#         # 3. Crear el diccionario de datos excluyendo el password plano
+#         user_data = user.dict(exclude={"password"})
+#         user_data["hashed_password"] = hashed_password
+
+#         # 4. Calcular edad si hay fecha de nacimiento
+#         if user.birth_date:
+#             today = date.today()
+#             user_data["age"] = today.year - user.birth_date.year - (
+#                 (today.month, today.day) < (user.birth_date.month, user.birth_date.day))
+
+#         # 5. Crear instancia del modelo Users con TODOS los campos requeridos
+#         db_user = models.Users(**user_data)
+#         session.add(db_user)
+#         session.commit()
+#         session.refresh(db_user)
+#         return db_user
+
+#     except Exception as e:
+#         session.rollback()
+#         raise HTTPException(status_code=500, detail=str(e))
+    
+
+# @app.post("/Users/", response_model=schemas.UsersPublic)
+# def create_user(user: schemas.Create_User, session: session_dep):
+#     # Verificación de usuario existente
+#     existing_user = session.exec(
+#         select(models.Users).where(
+#             (models.Users.email == user.email) |
+#             (models.Users.name_user == user.name_user)
+#         )
+#     ).first()
+    
+#     if existing_user:
+#         raise HTTPException(status_code=400, detail="Usuario ya existe")
+
+#     # Crear usuario sin manejar relaciones directamente
+#     user_data = user.dict(exclude={"password"})
+#     user_data["hashed_password"] = models.pwd_context.hash(user.password)
+    
+#     db_user = models.Users(**user_data)
+#     session.add(db_user)
+#     session.commit()
+#     session.refresh(db_user)
+#     return db_user

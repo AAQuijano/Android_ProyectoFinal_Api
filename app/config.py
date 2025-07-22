@@ -1,4 +1,4 @@
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 import os
 from dotenv import load_dotenv
 
@@ -9,10 +9,11 @@ class Settings(BaseSettings):
     DATABASE_URL: str = os.getenv("DATABASE_URL", "")
     ALGORITHM: str = os.getenv("ALGORITHM", "HS256")
     ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
-
-    class Config:
-        case_sensitive = True
-        env_file = ".env"
+    
+    model_config = SettingsConfigDict(
+        case_sensitive=True,
+        env_file=".env"
+    )
 
     def __init__(self, **values):
         super().__init__(**values)

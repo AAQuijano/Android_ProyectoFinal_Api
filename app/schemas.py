@@ -80,3 +80,11 @@ class AdminPublic(SQLModel):
 
 # Unión para uso genérico de respuestas
 UserPublic = Union[StudentPublic, ProfessorPublic, AdminPublic]
+
+
+class UserUpdate(SQLModel):
+    """Schema para actualización parcial de usuarios"""
+    name_complete: Optional[str] = None
+    email: Optional[EmailStr] = None
+    birth_date: Optional[date] = None
+    specialization: Optional[str] = None  # Solo profesores

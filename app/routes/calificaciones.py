@@ -15,14 +15,37 @@ user_dep = Annotated[models.User, Depends(get_current_user)]
 
 @router.post("/", response_model=schemas.CalificacionPublic, status_code=status.HTTP_201_CREATED)
 def create_calificacion(cal: schemas.CalificacionCreate, session: session_dep, current_user: professor_dep):
-    if current_user.user_id != cal.professor_id:
-        raise HTTPException(status_code=403, detail="No puedes calificar en nombre de otro profesor")
-    db_cal = models.Calificacion(**cal.model_dump())
+    # Validar tipo de calificación
+    try:
+        cal.tipo = models.CalificacionTipo(cal.tipo)
+    except ValueError:
+        raise HTTPException(status_code=422, detail="Tipo de calificación inválido")
+
+    # Validar duplicado
+    existing_cal = session.exec(
+        select(models.Calificacion).where(
+            models.Calificacion.student_id == cal.student_id,
+            models.Calificacion.score_id == cal.score_id,
+            models.Calificacion.tipo == cal.tipo
+        )
+    ).first()
+
+    if existing_cal:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Ya existe una calificación de este tipo para el estudiante en esta materia"
+        )
+
+    # Crear la calificación con el profesor del token
+    db_cal = models.Calificacion(
+        **cal.model_dump(),
+        professor_id=current_user.user_id  # Añadir el professor_id del usuario autenticado
+    )
+
     session.add(db_cal)
     session.commit()
     session.refresh(db_cal)
     return db_cal
-
 
 @router.get("/{calificacion_id}", response_model=schemas.CalificacionPublic)
 def get_calificacion(calificacion_id: int, session: session_dep):

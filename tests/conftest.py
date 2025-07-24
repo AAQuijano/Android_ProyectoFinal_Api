@@ -1,11 +1,18 @@
 import pytest
-from sqlmodel import Session, select
+from sqlmodel import Session, SQLModel
+from app.db import engine
 from app.auth import create_access_token
 from app import models
 import warnings
 from sqlalchemy import exc as sa_exc
 
-# Suprimir warnings específicos de SQLAlchemy
+@pytest.fixture
+def db():
+    SQLModel.metadata.create_all(engine)
+    with Session(engine) as session:
+        yield session
+    SQLModel.metadata.drop_all(engine)
+
 @pytest.fixture(autouse=True)
 def suppress_sqlalchemy_warnings():
     warnings.filterwarnings(
@@ -13,10 +20,10 @@ def suppress_sqlalchemy_warnings():
         category=sa_exc.SAWarning,
         message="DELETE statement on table.*expected to delete.*"
     )
-    
+
 @pytest.fixture
-async def test_student(db: Session):
-    student = models.Student(
+def test_student(db: Session):
+    student = models.User(
         name_complete="Estudiante Test",
         name_user="student_test",
         cedula="11111111",
@@ -28,31 +35,27 @@ async def test_student(db: Session):
     db.add(student)
     db.commit()
     db.refresh(student)
-    yield student
-    db.delete(student)
-    db.commit()
+    return student
 
 @pytest.fixture
-async def test_other_student(db: Session):
-    student = models.Student(
-        name_complete="Otro Estudiante",
-        name_user="other_student",
-        cedula="22222222",
-        email="other@test.com",
-        gender="female",
-        role="student",
+def test_professor(db: Session):
+    prof = models.User(
+        name_complete="Profesor Test",
+        name_user="prof_test",
+        cedula="44444444",
+        email="prof@test.com",
+        gender="male",
+        role="professor",
         hashed_password="hashed123"
     )
-    db.add(student)
+    db.add(prof)
     db.commit()
-    db.refresh(student)
-    yield student
-    db.delete(student)
-    db.commit()
+    db.refresh(prof)
+    return prof
 
 @pytest.fixture
-async def test_admin(db: Session):
-    admin = models.Admin(
+def test_admin(db: Session):
+    admin = models.User(
         name_complete="Admin Test",
         name_user="admin_test",
         cedula="33333333",
@@ -64,9 +67,7 @@ async def test_admin(db: Session):
     db.add(admin)
     db.commit()
     db.refresh(admin)
-    yield admin
-    db.delete(admin)
-    db.commit()
+    return admin
 
 @pytest.fixture
 def student_token(test_student):
@@ -74,7 +75,17 @@ def student_token(test_student):
         data={
             "sub": test_student.name_user,
             "role": test_student.role,
-            "user_id": test_student.student_id
+            "user_id": test_student.user_id
+        }
+    )
+
+@pytest.fixture
+def professor_token(test_professor):
+    return create_access_token(
+        data={
+            "sub": test_professor.name_user,
+            "role": test_professor.role,
+            "user_id": test_professor.user_id
         }
     )
 
@@ -84,6 +95,6 @@ def admin_token(test_admin):
         data={
             "sub": test_admin.name_user,
             "role": test_admin.role,
-            "user_id": test_admin.admin_id
+            "user_id": test_admin.user_id
         }
     )

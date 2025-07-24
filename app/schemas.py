@@ -99,14 +99,14 @@ class CalificacionBase(SQLModel):
     """Esquema base para calificaciones"""
     valor: float
     tipo: CalificacionTipo
-    fecha: date
+    fecha: Optional[date] = None
     comentario: Optional[str] = None
 
 class CalificacionCreate(CalificacionBase):
     """Esquema para creación de calificaciones"""
     student_id: int
     score_id: int
-    professor_id: int
+    
 
 class CalificacionPublic(CalificacionBase):
     """Esquema público para calificaciones"""

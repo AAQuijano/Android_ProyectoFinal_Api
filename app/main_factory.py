@@ -4,12 +4,13 @@ from contextlib import asynccontextmanager
 from typing import Annotated
 
 from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlmodel import Session, select
 
 from app import models, schemas, auth
 from app.db import get_db, engine as default_engine
-from app.routes import usuarios
+from app.routes import usuarios, materias, calificaciones
 
 # Dependencias comunes
 session_dep = Annotated[Session, Depends(get_db)]
@@ -32,6 +33,23 @@ def create_app(engine_override=None):
         version="1.0.0",
         lifespan=lifespan
     )
+    # Middleware de CORS (para permitir frontend externo)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],  # Cambiar en producción a dominios específicos
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    # Middleware de logging de peticiones
+    @app.middleware("http")
+    async def log_requests(request, call_next):
+        print(f"➡️ {request.method} {request.url.path}")
+        response = await call_next(request)
+        print(f"⬅️ {response.status_code} {request.url.path}")
+        return response
+
 
     # Configurar engine override para testing si es necesario
     if engine_override:
@@ -83,7 +101,13 @@ def create_app(engine_override=None):
 
     #Incluir routers
     app.include_router(usuarios.router)
+    app.include_router(materias.router)
+    app.include_router(calificaciones.router)
 
     return app
 
 
+
+    @app.get("/health", tags=["Sistema"])
+    async def health_check():
+        return {"status": "ok"}

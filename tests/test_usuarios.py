@@ -1,6 +1,7 @@
 #test_usuarios.py
 import pytest
 from httpx import AsyncClient, ASGITransport
+from datetime import date
 from fastapi import status
 from sqlmodel import Session, select
 from app.main_factory import create_app
@@ -218,3 +219,36 @@ async def test_list_users_as_admin(test_app, admin_token, test_student, test_pro
         assert "student_test" in usernames
         assert "professor_test" in usernames
         assert "admin_test" in usernames
+
+
+@pytest.mark.asyncio
+async def test_historial_dentro_de_usuarios(test_app, test_student, test_professor, student_token):
+    # Crear materia y calificaciones
+    with Session(engine) as session:
+        score = models.Score(materia="Historia", professor_id=test_professor.user_id)
+        session.add(score)
+        session.commit()
+        session.refresh(score)
+
+        for val in [70, 80, 90]:
+            cal = models.Calificacion(
+                valor=val,
+                tipo="quiz",
+                fecha=date.today(),
+                student_id=test_student.user_id,
+                score_id=score.score_id,
+                professor_id=test_professor.user_id
+            )
+            session.add(cal)
+        session.commit()
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        r = await client.get(
+            f"/usuarios/{test_student.user_id}/historial",
+            headers={"Authorization": f"Bearer {student_token}"}
+        )
+        assert r.status_code == 200
+        data = r.json()
+        assert any(entry["materia"] == "Historia" for entry in data)
+        assert any(round(entry["promedio"], 2) == 80.0 for entry in data)

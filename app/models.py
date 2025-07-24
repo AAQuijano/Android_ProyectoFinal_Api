@@ -175,11 +175,3 @@ class Calificacion(CalificacionBase, table=True):
     )
 
 
-
-
-# class AulaBase(SQLModel):
-#     aula_name: str = Field(index=True)
-#     facultad: str = Field(index=True)
-
-# class Aula(AulaBase, table=True):
-#     aula_id: Optional[int] = Field(default=None, primary_key=True)

@@ -137,3 +137,28 @@ async def list_users(
         select(models.User).order_by(models.User.name_user).offset(skip).limit(limit)
     ).all()
     return [schemas.UserPublic.model_validate(u) for u in users]
+
+
+@router.get("/{user_id}/historial")
+def obtener_historial_academico(user_id: int, session: session_dep, current_user: user_dep):
+    user = session.get(models.User, user_id)
+    if not user or user.role != models.Role.STUDENT:
+        raise HTTPException(status_code=404, detail="Estudiante no encontrado")
+
+    historial = {}
+    for cal in user.calificaciones_as_student:
+        materia = cal.score.materia if cal.score else "Desconocida"
+        if materia not in historial:
+            historial[materia] = []
+        historial[materia].append(cal.valor)
+
+    from statistics import mean
+    resultado = []
+    for materia, notas in historial.items():
+        resultado.append({
+            "materia": materia,
+            "notas": notas,
+            "promedio": round(mean(notas), 2)
+        })
+
+    return resultado

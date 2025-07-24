@@ -220,7 +220,6 @@ async def test_list_users_as_admin(test_app, admin_token, test_student, test_pro
         assert "professor_test" in usernames
         assert "admin_test" in usernames
 
-
 @pytest.mark.asyncio
 async def test_historial_dentro_de_usuarios(test_app, test_student, test_professor, student_token):
     # Crear materia y calificaciones
@@ -229,26 +228,42 @@ async def test_historial_dentro_de_usuarios(test_app, test_student, test_profess
         session.add(score)
         session.commit()
         session.refresh(score)
+        score_id = score.score_id  # 🔁 Ahora sí puedes usarlo
 
         for val in [70, 80, 90]:
             cal = models.Calificacion(
                 valor=val,
-                tipo="quiz",
+                tipo=models.CalificacionTipo.QUIZ,
                 fecha=date.today(),
                 student_id=test_student.user_id,
-                score_id=score.score_id,
+                score_id=score_id,
                 professor_id=test_professor.user_id
             )
             session.add(cal)
         session.commit()
 
+    # Ejecutar la petición
     transport = ASGITransport(app=test_app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
-        r = await client.get(
+        response = await client.get(
             f"/usuarios/{test_student.user_id}/historial",
             headers={"Authorization": f"Bearer {student_token}"}
         )
-        assert r.status_code == 200
-        data = r.json()
-        assert any(entry["materia"] == "Historia" for entry in data)
-        assert any(round(entry["promedio"], 2) == 80.0 for entry in data)
+        assert response.status_code == 200
+        data = response.json()
+        assert any(d["materia"] == "Historia" for d in data)
+        assert any(round(d["promedio"], 2) == 80.0 for d in data)
+
+    # Limpieza final segura
+    with Session(engine) as session:
+        # Eliminar calificaciones asociadas
+        stmt_cals = select(models.Calificacion).where(models.Calificacion.score_id == score_id)
+        cals = session.exec(stmt_cals).all()
+        for cal in cals:
+            session.delete(cal)
+
+        # Eliminar materia
+        score = session.get(models.Score, score_id)
+        if score:
+            session.delete(score)
+        session.commit()

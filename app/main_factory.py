@@ -98,16 +98,21 @@ def create_app(engine_override=None):
         )
 
         return {"access_token": access_token, "token_type": "bearer"}
+    
+
+    
+    @app.get("/health", tags=["Sistema"])
+    async def health_check():
+        return {"status": "ok"}
 
     #Incluir routers
     app.include_router(usuarios.router)
     app.include_router(materias.router)
     app.include_router(calificaciones.router)
 
+    
+
     return app
 
 
 
-    @app.get("/health", tags=["Sistema"])
-    async def health_check():
-        return {"status": "ok"}

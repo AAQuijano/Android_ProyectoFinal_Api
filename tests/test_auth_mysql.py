@@ -37,9 +37,9 @@ async def test_registro_y_login_estudiante(test_app):
 
         # Crear usuario
         response = await client.post("/usuarios/", json=estudiante)
-        assert response.status_code == 201
+        assert response.status_code == 201, response.text
         body = response.json()
-        assert "student_id" in body
+        assert "user_id" in body
         assert body["name_user"] == "estudiante1"
         assert body["role"] == "student"
 
@@ -53,7 +53,8 @@ async def test_registro_y_login_estudiante(test_app):
             },
             headers={"Content-Type": "application/x-www-form-urlencoded"}
         )
-        assert response.status_code == 200
+        assert response.status_code == 200, response.text
         token = response.json()
         assert "access_token" in token
         assert token["token_type"] == "bearer"
+

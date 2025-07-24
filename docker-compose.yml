@@ -1,28 +1,57 @@
-services:
-  db:
-    image: postgres:15
-    container_name: postgres_db
-    restart: always
-    environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: pass
-      POSTGRES_DB: fastapi_db
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+version: '3.8'
 
-  pgadmin:
-    image: dpage/pgadmin4
-    container_name: pgadmin
-    restart: always
+services:
+  mysql_db:
+    image: mysql:8.0  # Versión LTS estable (no usar latest)
+    container_name: mysql_prod
+    restart: unless-stopped
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@local.com
-      PGADMIN_DEFAULT_PASSWORD: admin123
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}  # Definir en .env
+      MYSQL_USER: ${DB_USER}                    # Usuario app
+      MYSQL_PASSWORD: ${DB_PASSWORD}            # Contraseña app
+      MYSQL_DATABASE: ${DB_NAME}                # Nombre BD
+      TZ: America/Lima                          # Zona horaria
     ports:
-      - "5050:80"
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql               # Datos persistentes
+      - ./mysql/conf.d:/etc/mysql/conf.d        # Config personalizada
+    networks:
+      - backend_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+
+  # Opcional: Administrador web (phpMyAdmin)
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
     depends_on:
-      - db
+      - mysql_db
+    ports:
+      - "8080:80"
+    environment:
+      PMA_HOST: mysql_db
+      PMA_USER: ${DB_ROOT_PASSWORD}
+      PMA_PASSWORD: ${DB_PASSWORD}
+    networks:
+      - backend_network
 
 volumes:
-  postgres_data:
+  mysql_data:
+    driver: local
+    driver_opts:
+      type: none
+      device: /opt/mysql_data  # Ruta personalizada
+      o: bind
+
+networks:
+  backend_network:
+    driver: bridge
+    attachable: true

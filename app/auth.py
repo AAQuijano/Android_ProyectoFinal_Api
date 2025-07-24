@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta, timezone
-from typing import Optional
+from typing import Optional, Union
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
@@ -67,13 +67,13 @@ async def get_current_user(
 
 # Reutilizable para endpoints que requieren autenticación básica
 async def get_current_active_user(
-    current_user: schemas.UserPublic = Depends(get_current_user)
+    current_user: Union[models.Student, models.Professor, models.Admin] = Depends(get_current_user)
 ):
     return current_user
 
 # Valida que el usuario sea administrador
 async def get_current_admin_user(
-    current_user: schemas.UserPublic = Depends(get_current_user)
+    current_user: Union[models.Student, models.Professor, models.Admin] = Depends(get_current_user)
 ):
     if current_user.role != models.Role.ADMIN:
         raise HTTPException(
@@ -84,7 +84,7 @@ async def get_current_admin_user(
 
 # Valida que el usuario sea profesor
 async def get_current_professor_user(
-    current_user: schemas.UserPublic = Depends(get_current_user)
+    current_user: Union[models.Student, models.Professor, models.Admin] = Depends(get_current_user)
 ):
     if current_user.role != models.Role.PROFESSOR:
         raise HTTPException(

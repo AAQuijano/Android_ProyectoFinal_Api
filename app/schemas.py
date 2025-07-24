@@ -88,3 +88,4 @@ class UserUpdate(SQLModel):
     email: Optional[EmailStr] = None
     birth_date: Optional[date] = None
     specialization: Optional[str] = None  # Solo profesores
+    password: Optional[str] = None

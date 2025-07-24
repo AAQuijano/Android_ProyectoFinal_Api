@@ -1,6 +1,6 @@
 #usuarios.py
 from datetime import date
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlmodel import Session, select
 from app import models, schemas
 from app.db import get_db
@@ -11,7 +11,7 @@ router = APIRouter(prefix="/usuarios", tags=["usuarios"])
 
 # Dependencias reutilizables
 session_dep = Annotated[Session, Depends(get_db)]
-user_dep = Annotated[schemas.UserPublic, Depends(get_current_user)]
+user_dep = Annotated[Union[models.Student,models.Professor,models.Admin], Depends(get_current_user)]
 admin_dep = Annotated[schemas.UserPublic, Depends(get_current_admin_user)]
 
 
@@ -145,29 +145,95 @@ async def read_user(
     raise HTTPException(status_code=404, detail="Usuario no encontrado")
 
 
-@router.patch(
-    "/{user_id}",
-    response_model=schemas.UserPublic,
-    summary="Actualizar usuario"
-)
+@router.patch("/{user_id}", response_model=schemas.UserPublic)
 async def update_user(
     user_id: int,
-    user_update: schemas.UserUpdate,  # Necesitarás crear este schema
+    user_update: schemas.UserUpdate,
     session: session_dep,
     current_user: user_dep
 ):
-    """Actualiza datos de usuario (solo admin o el propio usuario)."""
-    pass  # Implementar lógica similar a read_user pero con actualización
+    # 🔒 1. Validar permisos
+    if current_user.role != models.Role.ADMIN:
+        if (
+            (current_user.role == models.Role.STUDENT and user_id != current_user.student_id)
+            or (current_user.role == models.Role.PROFESSOR and user_id != current_user.professor_id)
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Solo puedes modificar tu propio perfil"
+            )
 
-@router.delete(
-    "/{user_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
-    summary="Eliminar usuario"
-)
+    # 🔍 2. Buscar al usuario destino por ID en todos los modelos
+    user = None
+    for model in [models.Student, models.Professor, models.Admin]:
+        user = session.get(model, user_id)
+        if user:
+            break
+
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+
+    # 🔁 3. Aplicar cambios
+    update_data = user_update.model_dump(exclude_unset=True)
+    if 'password' in update_data:
+        update_data['hashed_password'] = models.pwd_context.hash(update_data.pop('password'))
+
+    for key, value in update_data.items():
+        setattr(user, key, value)
+
+    session.commit()
+    session.refresh(user)
+
+    # ✅ 4. Retornar con schema adecuado
+    if isinstance(user, models.Student):
+        return schemas.StudentPublic.model_validate(user)
+    elif isinstance(user, models.Professor):
+        return schemas.ProfessorPublic.model_validate(user)
+    return schemas.AdminPublic.model_validate(user)
+
+
+
+@router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_user(
     user_id: int,
     session: session_dep,
-    current_user: admin_dep  # Solo admin puede eliminar
+    current_user: admin_dep
 ):
-    """Elimina un usuario (solo administradores)."""
-    pass
+    # Verificar si el usuario existe antes de intentar eliminarlo
+    user = None
+    for model in [models.Student, models.Professor, models.Admin]:
+        user = session.get(model, user_id)
+        if user:
+            break
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Usuario no encontrado"
+        )
+
+    # Si existe, proceder con la eliminación
+    session.delete(user)
+    session.commit()
+    return
+
+@router.get("/", response_model=list[schemas.UserPublic])
+async def list_users(
+    session: session_dep,
+    current_user: admin_dep,
+    skip: int = Query(0, ge=0),
+    limit: int = Query(10, le=100)
+):
+    # Asegurarnos de que cada query aplica la paginación
+    users = []
+    for model in [models.Student, models.Professor, models.Admin]:
+        query = select(model).order_by(model.name_user).offset(skip).limit(limit)
+        result = session.exec(query)
+        users.extend(result.all())
+    
+    return [
+        schemas.StudentPublic.model_validate(u) if isinstance(u, models.Student)
+        else schemas.ProfessorPublic.model_validate(u) if isinstance(u, models.Professor)
+        else schemas.AdminPublic.model_validate(u)
+        for u in users
+    ]

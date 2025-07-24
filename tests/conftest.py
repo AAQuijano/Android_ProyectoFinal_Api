@@ -2,6 +2,18 @@ import pytest
 from sqlmodel import Session, select
 from app.auth import create_access_token
 from app import models
+import warnings
+from sqlalchemy import exc as sa_exc
+
+# Suprimir warnings específicos de SQLAlchemy
+@pytest.fixture(autouse=True)
+def suppress_sqlalchemy_warnings():
+    warnings.filterwarnings(
+        "ignore",
+        category=sa_exc.SAWarning,
+        message="DELETE statement on table.*expected to delete.*"
+    )
+    
 @pytest.fixture
 async def test_student(db: Session):
     student = models.Student(

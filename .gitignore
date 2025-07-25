@@ -1,15 +1,33 @@
-# Entornos virtuales
-venv/
-.env/
-.venv/
-
-# Variables de entorno
-.env
-
-# Python
+# Python bytecode
 __pycache__/
 *.py[cod]
-*.egg-info/
+
+# Virtualenv
+venv/
+.venv/
+
+# Environment variables
+.env
+
+# Coverage and test artifacts
+.coverage
+htmlcov/
 .pytest_cache/
 .mypy_cache/
-app/main.py
+*.sqlite3
+*.log
+
+# Packaging
+*.egg-info/
+
+# IDE settings
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker & misc
+*.pid
+*.db

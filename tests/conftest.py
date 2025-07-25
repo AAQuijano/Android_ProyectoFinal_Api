@@ -5,6 +5,12 @@ from app.auth import create_access_token
 from app import models
 import warnings
 from sqlalchemy import exc as sa_exc
+from app.main_factory import create_app
+
+
+@pytest.fixture
+def test_app():
+    return create_app()
 
 @pytest.fixture
 def db():

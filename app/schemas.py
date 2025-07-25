@@ -5,6 +5,7 @@ from typing import Optional, Annotated, Union
 from sqlmodel import SQLModel
 from pydantic import EmailStr, StringConstraints, field_validator
 from app.models import Role, Gender, CalificacionTipo
+from pydantic import FieldValidationInfo  # asegúrate de importar esto
 
 # Tipos validados con restricciones
 CedulaStr = Annotated[str, StringConstraints(min_length=7, max_length=12)]
@@ -33,6 +34,8 @@ class UserLogin(SQLModel):
 # Esquemas de Usuario
 # ------------------------------------------
 
+
+
 class UserCreate(SQLModel):
     """Esquema para creación de usuarios"""
     name_complete: str
@@ -46,11 +49,13 @@ class UserCreate(SQLModel):
     specialization: Optional[str] = None
 
     @field_validator('specialization')
-    def validate_specialization(cls, v, values):
+    @classmethod
+    def validate_specialization(cls, v, info: FieldValidationInfo):
         """Valida que los profesores tengan especialización"""
-        if 'role' in values and values['role'] == Role.PROFESSOR and not v:
+        if info.data.get("role") == Role.PROFESSOR and not v:
             raise ValueError("Specialization is required for professors")
         return v
+
 
 class UserPublicBase(SQLModel):
     """Campos base compartidos para la vista pública de usuarios"""

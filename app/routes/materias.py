@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlmodel import Session, select, col
 from app import models, schemas
 from app.db import get_db
-from app.auth import get_current_user, get_current_professor_user, get_current_admin_user
+from app.auth.auth import get_current_user, get_current_professor_user, get_current_admin_user
 from typing import Annotated
 
 router = APIRouter(prefix="/materias", tags=["materias"])

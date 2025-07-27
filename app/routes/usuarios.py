@@ -4,10 +4,12 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlmodel import Session, select
 from app import models, schemas
 from app.db import get_db
-from app.auth import get_current_user, get_current_admin_user
+from app.auth.auth import get_current_user, get_current_admin_user
+from app.auth.permissions import require_role_or_none
 from typing import Annotated, Optional
 
 router = APIRouter(prefix="/usuarios", tags=["usuarios"])
+
 
 # Dependencias reutilizables
 session_dep = Annotated[Session, Depends(get_db)]
@@ -23,7 +25,19 @@ def calculate_age(birth_date: Optional[date]) -> Optional[int]:
 
 
 @router.post("/", response_model=schemas.UserPublic, status_code=status.HTTP_201_CREATED)
-def create_user(user: schemas.UserCreate, session: session_dep):
+def create_user(user: schemas.UserCreate, 
+                session: session_dep,
+                 current_user: Optional[models.User] = require_role_or_none([models.Role.ADMIN])
+                 ):
+    
+    print("🔍 Rol recibido:", user.role)
+    print("🔍 Especialización recibida:", user.specialization)
+    print("🔍 Current user:", current_user)
+    if current_user is not None and current_user.role != models.Role.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Solo un administrador puede crear nuevos usuarios estando autenticado"
+        )
     try:
         # Verificar unicidad
         existing_user = session.exec(
@@ -38,12 +52,18 @@ def create_user(user: schemas.UserCreate, session: session_dep):
                 status_code=status.HTTP_409_CONFLICT,
                 detail="El email, nombre de usuario o cédula ya están registrados"
             )
-
+        
         # Validar especialización si es profesor
         if user.role == models.Role.PROFESSOR and not user.specialization:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail="Especialización requerida para profesores"
+            )
+        
+        if user.role != models.Role.PROFESSOR and user.specialization not in (None,""):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Solo los profesores pueden tener especialización"
             )
 
         hashed_password = models.pwd_context.hash(user.password)

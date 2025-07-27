@@ -7,8 +7,8 @@ from jose import JWTError, jwt
 from sqlmodel import Session, select
 
 from app import models, schemas
-from .config import settings
-from .db import get_db
+from ..config import settings
+from ..db import get_db
 
 # Configuración de seguridad
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
@@ -141,3 +141,28 @@ async def get_current_professor_user(
             detail="Se requieren permisos de profesor"
         )
     return current_user
+
+
+async def get_optional_user(
+    token: Optional[str] = Depends(oauth2_scheme),
+    db: Session = Depends(get_db)
+) -> Optional[models.User]:
+    if token is None:
+        return None
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        username: str = payload.get("sub")
+        user_id: int = payload.get("user_id")
+        if username is None or user_id is None:
+            return None
+    except JWTError:
+        return None
+
+    user = db.exec(
+        select(models.User).where(
+            (models.User.name_user == username) &
+            (models.User.user_id == user_id)
+        )
+    ).first()
+
+    return user

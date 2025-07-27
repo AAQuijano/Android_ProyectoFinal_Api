@@ -8,7 +8,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlmodel import Session, select
 
-from app import models, schemas, auth
+from app import models, schemas
+from app.auth import auth
 from app.db import get_db, engine as default_engine
 from app.routes import usuarios, materias, calificaciones
 

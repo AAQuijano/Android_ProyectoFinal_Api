@@ -1,7 +1,7 @@
 import pytest
 from sqlmodel import Session, SQLModel
 from app.db import engine
-from app.auth import create_access_token
+from app.auth.auth import create_access_token
 from app import models
 import warnings
 from sqlalchemy import exc as sa_exc

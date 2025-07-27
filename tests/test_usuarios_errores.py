@@ -6,7 +6,7 @@ from sqlmodel import Session
 from app.main_factory import create_app
 from app import models
 from app.db import engine
-from app.auth import create_access_token
+from app.auth.auth import create_access_token
 
 @pytest.fixture
 def test_app():

@@ -3,9 +3,8 @@ from datetime import date
 from enum import Enum
 from typing import Optional, Annotated, Union
 from sqlmodel import SQLModel
-from pydantic import EmailStr, StringConstraints, field_validator
-from app.models import Role, Gender, CalificacionTipo
-from pydantic import FieldValidationInfo  # asegúrate de importar esto
+from pydantic import EmailStr, StringConstraints, field_validator, ValidationInfo
+from app.models import Role, Gender, CalificacionTipo  # asegúrate de importar esto
 
 # Tipos validados con restricciones
 CedulaStr = Annotated[str, StringConstraints(min_length=7, max_length=12)]
@@ -50,10 +49,13 @@ class UserCreate(SQLModel):
 
     @field_validator('specialization')
     @classmethod
-    def validate_specialization(cls, v, info: FieldValidationInfo):
-        """Valida que los profesores tengan especialización"""
-        if info.data.get("role") == Role.PROFESSOR and not v:
+    def validate_specialization(cls, v, info: ValidationInfo):
+        role = info.data.get("role")
+        if role == Role.PROFESSOR and not v:
             raise ValueError("Specialization is required for professors")
+    
+        if role != Role.PROFESSOR and v:
+            raise ValueError("Only professors can have specialization")
         return v
 
 

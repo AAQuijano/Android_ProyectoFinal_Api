@@ -4,7 +4,7 @@ from httpx import AsyncClient, ASGITransport
 from datetime import datetime, timedelta, timezone
 from jose import jwt
 from app.config import Settings
-from app.auth import create_access_token
+from app.auth.auth import create_access_token
 
 settings = Settings()
 

@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlmodel import Session, select
 from app import models, schemas
 from app.db import get_db
-from app.auth import get_current_user, get_current_professor_user
+from app.auth.auth import get_current_user, get_current_professor_user
 from typing import Annotated, List
 
 router = APIRouter(prefix="/calificaciones", tags=["calificaciones"])

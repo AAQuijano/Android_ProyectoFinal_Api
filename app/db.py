@@ -8,6 +8,10 @@ db_url = settings.DATABASE_URL
 engine = create_engine(
     db_url,
     echo=True,
+    pool_pre_ping=True,
+    pool_recycle=280,  # importante si tu servidor cierra conexiones inactivas (~5min)
+    pool_size=10,
+    max_overflow=20,
     connect_args={"check_same_thread": False} if "sqlite" in db_url else {}
 )
 

@@ -1,7 +1,7 @@
 
 # FastAPI + MySQL API
 
-Este proyecto es una API desarrollada con [FastAPI](https://fastapi.tiangolo.com/) y conectada a una base de datos MySQL. Está preparada para ser desplegada en producción sobre AWS EC2 y RDS.
+Este proyecto es una API desarrollada con [FastAPI](https://fastapi.tiangolo.com/) y conectada a una base de datos MySQL. Está en proceso para ser desplegada en producción sobre AWS EC2 y RDS.
 
 ---
 

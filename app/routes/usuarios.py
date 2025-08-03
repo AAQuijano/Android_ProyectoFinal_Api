@@ -30,9 +30,9 @@ def create_user(user: schemas.UserCreate,
                  current_user: Optional[models.User] = require_role_or_none([models.Role.ADMIN])
                  ):
     
-    print("🔍 Rol recibido:", user.role)
-    print("🔍 Especialización recibida:", user.specialization)
-    print("🔍 Current user:", current_user)
+    # print("🔍 Rol recibido:", user.role)
+    # print("🔍 Especialización recibida:", user.specialization)
+    # print("🔍 Current user:", current_user)
     if current_user is not None and current_user.role != models.Role.ADMIN:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -54,17 +54,30 @@ def create_user(user: schemas.UserCreate,
             )
         
         # Validar especialización si es profesor
-        if user.role == models.Role.PROFESSOR and not user.specialization:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail="Especialización requerida para profesores"
-            )
+        # if user.role == models.Role.PROFESSOR and not user.specialization:
+        #     raise HTTPException(
+        #         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        #         detail="Especialización requerida para profesores"
+        #     )
         
         if user.role != models.Role.PROFESSOR and user.specialization not in (None,""):
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail="Solo los profesores pueden tener especialización"
             )
+        
+        if user.role != models.Role.STUDENT and user.career not in (None,""):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Solo los estudiantes pueden tener carrera"
+            )
+        
+        # if user.role == models.Role.STUDENT and not user.career:
+        #     raise HTTPException(
+        #         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        #         detail="Carrera requerida para estudiantes"
+        #     )
+
 
         hashed_password = models.pwd_context.hash(user.password)
         age = calculate_age(user.birth_date)
@@ -126,6 +139,21 @@ async def update_user(
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
 
     update_data = user_update.model_dump(exclude_unset=True)
+    update_data = {k: v for k, v in update_data.items() if v is not None}
+
+
+    # Validaciones manuales porque 'role' no viene en PATCH
+    if "specialization" in update_data and user.role != models.Role.PROFESSOR:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Solo los profesores pueden tener especialización"
+        )
+    if "career" in update_data and user.role != models.Role.STUDENT:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Solo los estudiantes pueden tener carrera"
+        )
+
     if 'password' in update_data:
         update_data['hashed_password'] = models.pwd_context.hash(update_data.pop('password'))
 

@@ -67,9 +67,14 @@ class User(UserBase, table=True):
     """Modelo principal de usuario que representa todos los roles en el sistema"""
     user_id: Optional[int] = Field(default=None, primary_key=True)
     hashed_password: str = Field(..., description="Contraseña hasheada")
+    
     specialization: Optional[str] = Field(
         None, 
         description="Especialización profesional (solo para profesores)"
+    )
+    career: Optional[str] = Field(
+        None, 
+        description="Carrera de estudiante (solo para estudiantes)"
     )
 
     # Relaciones

@@ -46,6 +46,7 @@ class UserCreate(SQLModel):
     password: str
     role: Role
     specialization: Optional[str] = None
+    career: Optional[str] = None
 
     @field_validator('specialization')
     @classmethod
@@ -56,6 +57,17 @@ class UserCreate(SQLModel):
     
         if role != Role.PROFESSOR and v:
             raise ValueError("Only professors can have specialization")
+        return v
+    
+    @field_validator('career')
+    @classmethod
+    def validate_career(cls, v, info: ValidationInfo):
+        role = info.data.get("role")
+        if role == Role.STUDENT and not v:
+            raise ValueError("Career is required for students")
+    
+        if role != Role.STUDENT and v:
+            raise ValueError("Only students can have career")
         return v
 
 
@@ -74,6 +86,7 @@ class UserPublicBase(SQLModel):
 class UserPublic(UserPublicBase):
     """Esquema público completo para usuarios (incluye campos específicos por rol)"""
     specialization: Optional[str] = None
+    career: Optional[str] = None
 
 class UserUpdate(SQLModel):
     """Esquema para actualización parcial de usuarios"""
@@ -81,7 +94,24 @@ class UserUpdate(SQLModel):
     email: Optional[EmailStr] = None
     birth_date: Optional[date] = None
     specialization: Optional[str] = None
+    career: Optional[str] = None
     password: Optional[str] = None
+
+    @field_validator('specialization')
+    @classmethod
+    def validate_specialization(cls, v, info: ValidationInfo):
+        role = info.data.get("role")
+        if role != Role.PROFESSOR and v:
+            raise ValueError("Only professors can have specialization")
+        return v
+    
+    @field_validator('career')
+    @classmethod
+    def validate_career(cls, v, info: ValidationInfo):
+        role = info.data.get("role")
+        if role != Role.STUDENT and v:
+            raise ValueError("Only students can have career")
+        return v
 
 
 # ------------------------------------------

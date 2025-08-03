@@ -98,4 +98,4 @@ fastapi dev "main.py"
 
 ## 📱 Frontend Android
 
-Este backend está listo para integrarse con una app móvil en Jetpack Compose mediante autenticación JWT.
+Este backend aun esta proceso.
